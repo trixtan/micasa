@@ -22,6 +22,8 @@ import org.springframework.web.client.RestTemplate;
 
 import co.nri.micasa.trenitime.model.in.viaggiatreno.soluzioniViaggioNew.Soluzione;
 import co.nri.micasa.trenitime.model.in.viaggiatreno.soluzioniViaggioNew.SoluzioniViaggioNewResponse;
+import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.annotation.BeforeStep;
 
 @Component
 public class FetchSoluzioniViaggioTasklet implements Tasklet {
@@ -42,12 +44,19 @@ public class FetchSoluzioniViaggioTasklet implements Tasklet {
 
     @Value("${trenitime.toStation}")
     private String toStation;
+    
+    private StepExecution stepExecution;
+    
+    @BeforeStep
+    public void beforeStep(StepExecution stepExecution) {
+        this.stepExecution = stepExecution;
+    }
 
     @Override
     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
         Map<String, Soluzione> soluzioni = getSoluzioni();
         if(soluzioni != null) {
-            chunkContext.getStepContext().getJobExecutionContext().put("soluzioniViaggio", soluzioni);
+            this.stepExecution.getExecutionContext().put("soluzioniViaggio", soluzioni);
             return RepeatStatus.CONTINUABLE;
         } else {
             return RepeatStatus.FINISHED;
@@ -70,9 +79,9 @@ public class FetchSoluzioniViaggioTasklet implements Tasklet {
                 return null;
             } else {
                 Map<String, Soluzione> soluzioni = new HashMap<>();
-                for (Soluzione s:  response.getSoluzioni()) {
+                response.getSoluzioni().stream().forEach((s) -> {
                     soluzioni.put(s.getVehicles().get(0).getNumeroTreno(), s);
-                }
+                });
                 return soluzioni;
             }
         } catch(Exception e) {

@@ -7,62 +7,45 @@ import org.springframework.batch.core.configuration.annotation.EnableBatchProces
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
-import org.springframework.batch.item.ItemProcessor;
-import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.FileSystemResource;
 
-import co.nri.micasa.trenitime.model.in.viaggiatreno.partenze.PartenzaIn;
-import co.nri.micasa.trenitime.model.out.partenze.Partenza;
-import co.nri.micasa.trenitime.processor.PartenzaProcessor;
-import co.nri.micasa.trenitime.reader.SoluzioniViaggioNewReader;
 import co.nri.micasa.trenitime.tasklet.FetchPartenzeTasklet;
 import co.nri.micasa.trenitime.tasklet.FetchSoluzioniViaggioTasklet;
+import org.springframework.batch.core.StepExecutionListener;
+import org.springframework.batch.core.listener.ExecutionContextPromotionListener;
 
 @Configuration
 @EnableBatchProcessing
 public class TreniTimeJobConfiguration {
 
     @Bean
-    public ItemReader<PartenzaIn> reader() {
-        return new SoluzioniViaggioNewReader();
-    }
-
-    @Bean
-    public ItemProcessor<PartenzaIn, Partenza> processor() {
-        return new PartenzaProcessor();
-    }
-
-    @Bean
-    public ItemWriter<Partenza> writer() {
-        FlatFileItemWriter writer = new FlatFileItemWriter<Partenza>();
-        writer.setLineAggregator((item) -> item.toString());
-        writer.setResource(new FileSystemResource("C:\\dev\\TreniTime"));
-        return writer;
-    }
-
-    @Bean
-    public Job fetchPartenzeJob(
+    public Job trenitimeJob(
             JobBuilderFactory jobs,
             Step fetchSoluzioniStep,
-            Step fetchPartenzeStep,
-            JobExecutionListener listener) {
+            Step fetchPartenzeStep) {
         return jobs.get("fetchPartenzeJob")
                 .incrementer(new RunIdIncrementer())
-                .listener(listener)
-                .flow(fetchSoluzioniStep)
+                .start(fetchSoluzioniStep)
                 .next(fetchPartenzeStep)
-                .end()
                 .build();
     }
 
     @Bean
-    public Step fetchSoluzioniStep(StepBuilderFactory stepBuilderFactory, FetchSoluzioniViaggioTasklet fetchSoluzioniViaggioTasklet) {
+    public StepExecutionListener promotionListener() {
+        ExecutionContextPromotionListener toRet = new ExecutionContextPromotionListener();
+        toRet.setKeys(new String[]{"soluzioniViaggio"});
+        return toRet;
+    }
+   
+    @Bean
+    public Step fetchSoluzioniStep(
+            StepBuilderFactory stepBuilderFactory, 
+            FetchSoluzioniViaggioTasklet fetchSoluzioniViaggioTasklet,
+            StepExecutionListener promotionListener) {
         return stepBuilderFactory.get("fetchSoluzioniStep")
                 .tasklet(fetchSoluzioniViaggioTasklet)
+                .listener(promotionListener)
                 .build();
     }
 
@@ -72,16 +55,4 @@ public class TreniTimeJobConfiguration {
                 .tasklet(fetchPartenzeTasklet)
                 .build();
     }
-
-    @Bean
-    public Step step1(StepBuilderFactory stepBuilderFactory, ItemReader<PartenzaIn> reader,
-                      ItemWriter<Partenza> writer, ItemProcessor<PartenzaIn, Partenza> processor) {
-        return stepBuilderFactory.get("step1")
-                .<PartenzaIn, Partenza> chunk(10)
-                .reader(reader)
-                .processor(processor)
-                .writer(writer)
-                .build();
-    }
-
 }

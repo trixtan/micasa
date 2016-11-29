@@ -46,7 +46,7 @@ public class TreniTimeServiceImpl implements TreniTimeService {
         mqttClient.disconnect();
     }
 
-    private void publishPartenza(int position, Partenza partenza, MqttClient mqttClient) {
+    private void publishPartenza(int position, Partenza partenza, MqttClient mqttClient) throws MqttException {
         StringBuilder sb = new StringBuilder(partenza.getCategoriaTreno())
                 .append("|").append(Long.toString(partenza.getOrarioPartenza()));
         MqttMessage message = new MqttMessage();
@@ -55,7 +55,7 @@ public class TreniTimeServiceImpl implements TreniTimeService {
         mqttClient.publish(topic + "/" + position, message);
     }
 
-    private void clearPartenza(int position, MqttClient mqttClient) {
+    private void clearPartenza(int position, MqttClient mqttClient) throws MqttException {
         mqttClient.publish(topic + "/" + position, null);
     }
 

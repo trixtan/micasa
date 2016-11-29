@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class TreniTimeBatchApplication {
 
     public static void main(String[] args) throws Exception {
-        SpringApplication.run(TreniTimeBatchApplication.class, args);
+        System.exit(SpringApplication.exit(SpringApplication.run(
+                TreniTimeBatchApplication.class, args)));
     }
 }
