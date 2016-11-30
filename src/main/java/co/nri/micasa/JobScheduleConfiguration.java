@@ -14,13 +14,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 
-@Configuration
-@EnableScheduling
+@Component
 public class JobScheduleConfiguration {
     
     @Autowired
     protected Job etraJob;
+    
+    @Autowired
+    protected Job trenitimeJob;
     
     @Autowired
     protected JobLauncher jobLauncher;
@@ -32,9 +35,15 @@ public class JobScheduleConfiguration {
         return simpleJobLauncher;
     }
     
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "0 0 1 * * *")
     public void reportCurrentTime() throws JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException {
         jobLauncher.run(etraJob, new JobParameters());
+    }
+    
+    //Every five minutes
+    @Scheduled(fixedRate = 300000)
+    public void getNextTrainToMestre() throws JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException {
+        jobLauncher.run(trenitimeJob, new JobParameters());
     }
 
 }

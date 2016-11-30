@@ -20,6 +20,10 @@ import org.springframework.web.client.RestTemplate;
 
 import co.nri.micasa.trenitime.model.in.viaggiatreno.partenze.PartenzaIn;
 import co.nri.micasa.trenitime.model.in.viaggiatreno.soluzioniViaggioNew.Soluzione;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.temporal.TemporalField;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.http.HttpStatus;
@@ -49,13 +53,13 @@ public class FetchPartenzeTasklet implements Tasklet {
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         this.stepExecution = stepExecution;
-        this.soluzioniViaggio = (Map<String, Soluzione>) this.stepExecution.getExecutionContext().get("soluzioniViaggio");
+        this.soluzioniViaggio = (Map<String, Soluzione>) this.stepExecution.getJobExecution().getExecutionContext().get("soluzioniViaggio");
     }
 
     @Override
     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
         List<PartenzaIn> partenze = getPartenze();
-        chunkContext.getStepContext().getJobExecutionContext().put("partenze", partenze);
+        this.stepExecution.getExecutionContext().put("partenze", partenze);
         return RepeatStatus.FINISHED;
     }
 
@@ -81,14 +85,20 @@ public class FetchPartenzeTasklet implements Tasklet {
                 LOG.error("Can't load partenze. HttpStatus was {}", partenzeResponse.getStatusCode());
             } else {
                 List<PartenzaIn> partenzeListIn = partenzeResponse.getBody();
+                LocalDateTime now = LocalDateTime.now();
                 partenzeListIn
                         .stream()
-                        .filter((p) -> (this.soluzioniViaggio.containsKey(Integer.toString(p.getNumeroTreno()))))
+                        .filter((p) -> (
+                                this.soluzioniViaggio.containsKey(Integer.toString(p.getNumeroTreno())))
+                        )
                         .map((p) -> {
                             p.setOrarioPartenza(p.getOrarioPartenza() + (p.getRitardo() * 1000));
                             p.setCategoria(this.soluzioniViaggio.get(Integer.toString(p.getNumeroTreno())).getVehicles().get(0).getCategoriaDescrizione());
                             return p;
                         })
+                        .filter((p) -> (
+                                p.getOrarioPartenza() > now.atZone(ZoneId.systemDefault()).toEpochSecond()*1000)
+                        )
                         .forEach((p) -> {
                             partenzeListOut.add(p);
                         });
