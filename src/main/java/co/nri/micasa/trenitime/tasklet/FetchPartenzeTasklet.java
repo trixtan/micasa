@@ -20,6 +20,11 @@ import org.springframework.web.client.RestTemplate;
 
 import co.nri.micasa.trenitime.model.in.viaggiatreno.partenze.PartenzaIn;
 import co.nri.micasa.trenitime.model.in.viaggiatreno.soluzioniViaggioNew.Soluzione;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.http.HttpStatus;
@@ -29,19 +34,17 @@ public class FetchPartenzeTasklet implements Tasklet {
 
     private static final Logger LOG = LoggerFactory.getLogger(FetchPartenzeTasklet.class);
 
-    private static final SimpleDateFormat partenzeDateFormat = new SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT'Z", Locale.ENGLISH);
-
     private static final String CONFIG_PLACEHOLDER_PREFIX = "{";
     private static final String CONFIG_PLACEHOLDER_SUFFIX = "}";
+    
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("EEE MMM dd yyyy HH:mm:ss O", Locale.ENGLISH); 
+    //Trenitalia viaggiatreno works only with Europe Solar Time
+    private static final ZoneId zoneId = ZoneId.of("GMT+0100");
 
     @Value("${trenitime.endpoint.viaggiatreno.partenze}")
     private String partenzeUrl;
 
-    @Value("${trenitime.fromStation}")
     private String fromStation;
-
-    @Value("${trenitime.toStation}")
-    private String toStation;
     
     private StepExecution stepExecution;
     private Map<String, Soluzione> soluzioniViaggio;
@@ -49,19 +52,21 @@ public class FetchPartenzeTasklet implements Tasklet {
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         this.stepExecution = stepExecution;
-        this.soluzioniViaggio = (Map<String, Soluzione>) this.stepExecution.getExecutionContext().get("soluzioniViaggio");
+        this.soluzioniViaggio = (Map<String, Soluzione>) this.stepExecution.getJobExecution().getExecutionContext().get("soluzioniViaggio");
+        this.fromStation = this.stepExecution.getJobParameters().getString("fromStation");
     }
 
     @Override
     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
         List<PartenzaIn> partenze = getPartenze();
-        chunkContext.getStepContext().getJobExecutionContext().put("partenze", partenze);
+        this.stepExecution.getExecutionContext().put("partenze", partenze);
         return RepeatStatus.FINISHED;
     }
 
     private List<PartenzaIn> getPartenze() throws UnsupportedEncodingException {
         Map<String, String> placeholders = new HashMap<>();
-        placeholders.put("date", partenzeDateFormat.format(Calendar.getInstance().getTime()));
+        String dateStr = ZonedDateTime.now(zoneId).format(DATE_FORMATTER);
+        placeholders.put("date", dateStr);
         placeholders.put("fromStation", this.fromStation);
 
         RestTemplate restTemplate = new RestTemplate();
@@ -81,20 +86,22 @@ public class FetchPartenzeTasklet implements Tasklet {
                 LOG.error("Can't load partenze. HttpStatus was {}", partenzeResponse.getStatusCode());
             } else {
                 List<PartenzaIn> partenzeListIn = partenzeResponse.getBody();
+                LocalDateTime now = LocalDateTime.now();
                 partenzeListIn
                         .stream()
-                        .filter((p) -> (this.soluzioniViaggio.containsKey(Integer.toString(p.getNumeroTreno()))))
-                        .map((p) -> {
-                            p.setOrarioPartenza(p.getOrarioPartenza() + (p.getRitardo() * 1000));
-                            p.setCategoria(this.soluzioniViaggio.get(Integer.toString(p.getNumeroTreno())).getVehicles().get(0).getCategoriaDescrizione());
-                            return p;
-                        })
+                        .filter((p) -> (
+                                this.soluzioniViaggio.containsKey(Integer.toString(p.getNumeroTreno())))
+                        )
+                        .filter((p) -> (
+                                p.getOrarioPartenza() > now.atZone(zoneId).toEpochSecond()*1000)
+                        )
+                        .sorted((o1, o2) -> o1.getOrarioPartenza().compareTo(o2.getOrarioPartenza()))
                         .forEach((p) -> {
                             partenzeListOut.add(p);
+                            LocalDateTime partenza = LocalDateTime.ofInstant(Instant.ofEpochMilli(p.getOrarioPartenza()), zoneId);
+                            LOG.info("Added train {} departure at {}", new Object[]{
+                                p.getNumeroTreno(), partenza.format(DateTimeFormatter.ISO_DATE_TIME)});
                         });
-
-                //sort
-                Collections.sort(partenzeListOut, (o1, o2) -> o1.getOrarioPartenza().compareTo(o2.getOrarioPartenza()));
             }
             return partenzeListOut;
         } catch(HttpClientErrorException e) {

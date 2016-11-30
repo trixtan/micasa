@@ -1,7 +1,6 @@
 package co.nri.micasa.etra;
 
 import co.nri.micasa.MQTTPublishTasklet;
-import java.util.Collections;
 import java.util.List;
 import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.scope.context.ChunkContext;
@@ -16,6 +15,9 @@ public class EtraPublishTasklet extends MQTTPublishTasklet {
     
     private static final String CLIENT_ID = "EtraCalendar";
     
+    @Value("${etra.topic}")
+    protected String publishTopic;
+    
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
         ExecutionContext jobContext = chunkContext.getStepContext()
@@ -27,7 +29,7 @@ public class EtraPublishTasklet extends MQTTPublishTasklet {
         if(trashTypes != null && !trashTypes.isEmpty()) {
             result = StringUtils.collectionToDelimitedString(trashTypes, ",");
         }
-        this.publish("etra/garbagecollection/tomorrow", result);
+        this.publish(publishTopic, result);
         return RepeatStatus.FINISHED;
     }
 

@@ -22,6 +22,10 @@ import org.springframework.web.client.RestTemplate;
 
 import co.nri.micasa.trenitime.model.in.viaggiatreno.soluzioniViaggioNew.Soluzione;
 import co.nri.micasa.trenitime.model.in.viaggiatreno.soluzioniViaggioNew.SoluzioniViaggioNewResponse;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 
@@ -33,23 +37,27 @@ public class FetchSoluzioniViaggioTasklet implements Tasklet {
     private static final String CONFIG_PLACEHOLDER_PREFIX = "{";
     private static final String CONFIG_PLACEHOLDER_SUFFIX = "}";
 
-    private static final SimpleDateFormat soluzioniViaggioDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     private static final Pattern STATION_ID_PATTERN = Pattern.compile("(S0*)(.*)");
+    
+    //Trenitalia viaggiatreno works only with Europe Solar Time
+    private static final ZoneId zoneId = ZoneId.of("GMT+0100");
 
     @Value("${trenitime.endpoint.viaggiatreno.soluzioniViaggioNew}")
     private String soluzioniViaggioNewUrl;
 
-    @Value("${trenitime.fromStation}")
     private String fromStation;
-
-    @Value("${trenitime.toStation}")
     private String toStation;
     
     private StepExecution stepExecution;
     
+    
+    
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         this.stepExecution = stepExecution;
+        this.fromStation = this.stepExecution.getJobParameters().getString("fromStation");
+        this.toStation = this.stepExecution.getJobParameters().getString("toStation");
+
     }
 
     @Override
@@ -62,13 +70,19 @@ public class FetchSoluzioniViaggioTasklet implements Tasklet {
     private Map<String, Soluzione> getSoluzioni() {
         //Get all solutions from now
         Map<String, String> placeholders = new HashMap<>();
-        placeholders.put("date", soluzioniViaggioDateFormat.format(Calendar.getInstance().getTime()));
-        placeholders.put("fromStation", stripStationId(this.fromStation));
-        placeholders.put("toStation", stripStationId(this.toStation));
+        String dateStr = LocalDateTime.now(zoneId).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
+        String fromStation = stripStationId(this.fromStation);
+        String toStation = stripStationId(this.toStation);
+        LOG.info("Searching trains at {}, from station {} to station {}", new Object[]{dateStr, fromStation, toStation});
+        placeholders.put("date", dateStr);
+        placeholders.put("fromStation", fromStation);
+        placeholders.put("toStation", toStation);
         RestTemplate restTemplate = new RestTemplate();
         try {
+            String soluzioniUrl = StrSubstitutor.replace(this.soluzioniViaggioNewUrl, placeholders, CONFIG_PLACEHOLDER_PREFIX, CONFIG_PLACEHOLDER_SUFFIX);
+            LOG.info("Calling soluzioniViaggio: {}", soluzioniUrl);
             SoluzioniViaggioNewResponse response =  restTemplate.getForObject(
-                    StrSubstitutor.replace(this.soluzioniViaggioNewUrl, placeholders, CONFIG_PLACEHOLDER_PREFIX, CONFIG_PLACEHOLDER_SUFFIX),
+                    soluzioniUrl,
                     SoluzioniViaggioNewResponse.class);
             if(StringUtils.isNotBlank(response.getErrore())){
                 LOG.error("Can't load soluzioni. Error was {}", response.getErrore());
@@ -76,6 +90,10 @@ public class FetchSoluzioniViaggioTasklet implements Tasklet {
             } else {
                 Map<String, Soluzione> soluzioni = new HashMap<>();
                 response.getSoluzioni().stream().forEach((s) -> {
+                    LOG.info("Found train {} at {}", 
+                            new Object[]{
+                                s.getVehicles().get(0).getNumeroTreno(), 
+                                s.getVehicles().get(0).getOrarioPartenza()});
                     soluzioni.put(s.getVehicles().get(0).getNumeroTreno(), s);
                 });
                 return soluzioni;
