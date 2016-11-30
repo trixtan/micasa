@@ -19,6 +19,10 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import co.nri.micasa.trenitime.model.in.viaggiatreno.partenze.PartenzaIn;
+import co.nri.micasa.trenitime.model.in.viaggiatreno.soluzioniViaggioNew.Soluzione;
+import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.http.HttpStatus;
 
 @Component
 public class FetchPartenzeTasklet implements Tasklet {
@@ -38,16 +42,21 @@ public class FetchPartenzeTasklet implements Tasklet {
 
     @Value("${trenitime.toStation}")
     private String toStation;
+    
+    private StepExecution stepExecution;
+    private Map<String, Soluzione> soluzioniViaggio;
+    
+    @BeforeStep
+    public void beforeStep(StepExecution stepExecution) {
+        this.stepExecution = stepExecution;
+        this.soluzioniViaggio = (Map<String, Soluzione>) this.stepExecution.getExecutionContext().get("soluzioniViaggio");
+    }
 
     @Override
     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
         List<PartenzaIn> partenze = getPartenze();
-        if(partenze != null) {
-            chunkContext.getStepContext().getJobExecutionContext().put("partenze", partenze);
-            return RepeatStatus.CONTINUABLE;
-        } else {
-            return RepeatStatus.FINISHED;
-        }
+        chunkContext.getStepContext().getJobExecutionContext().put("partenze", partenze);
+        return RepeatStatus.FINISHED;
     }
 
     private List<PartenzaIn> getPartenze() throws UnsupportedEncodingException {
@@ -67,23 +76,27 @@ public class FetchPartenzeTasklet implements Tasklet {
                             new ParameterizedTypeReference<List<PartenzaIn>>() {
                             });
 
-            /*if(partenzeResponse.getStatusCode() != HttpStatus.OK){
+            List<PartenzaIn> partenzeListOut = new ArrayList<>();
+            if(partenzeResponse.getStatusCode() != HttpStatus.OK){
                 LOG.error("Can't load partenze. HttpStatus was {}", partenzeResponse.getStatusCode());
             } else {
-                List<PartenzaIn> partenzeListOut = new ArrayList<>();
                 List<PartenzaIn> partenzeListIn = partenzeResponse.getBody();
-                for (PartenzaIn p:  partenzeListIn) {
-                    if(this.soluzioni.containsKey(Integer.toString(p.getNumeroTreno()))){
-                        p.setOrarioPartenza(p.getOrarioPartenza() + (p.getRitardo() * 1000));
-                        p.setCategoria(this.soluzioni.get(Integer.toString(p.getNumeroTreno())).getVehicles().get(0).getCategoriaDescrizione());
-                        partenzeListOut.add(p);
-                    }
-                }
+                partenzeListIn
+                        .stream()
+                        .filter((p) -> (this.soluzioniViaggio.containsKey(Integer.toString(p.getNumeroTreno()))))
+                        .map((p) -> {
+                            p.setOrarioPartenza(p.getOrarioPartenza() + (p.getRitardo() * 1000));
+                            p.setCategoria(this.soluzioniViaggio.get(Integer.toString(p.getNumeroTreno())).getVehicles().get(0).getCategoriaDescrizione());
+                            return p;
+                        })
+                        .forEach((p) -> {
+                            partenzeListOut.add(p);
+                        });
 
                 //sort
-                Collections.sort(partenzeListOut, (o1, o2) -> o1.getOrarioPartenza().compareTo(o2.getOrarioPartenza()));*/
-
-            return partenzeResponse.getBody();
+                Collections.sort(partenzeListOut, (o1, o2) -> o1.getOrarioPartenza().compareTo(o2.getOrarioPartenza()));
+            }
+            return partenzeListOut;
         } catch(HttpClientErrorException e) {
             LOG.error("Can't get data from url: {}. Response body was: {}", url, e.getResponseBodyAsString(), e);
             return null;

@@ -32,9 +32,16 @@ public class TreniTimeJobConfiguration {
     }
 
     @Bean
-    public StepExecutionListener promotionListener() {
+    public StepExecutionListener soluzioniViaggioPromotionListener() {
         ExecutionContextPromotionListener toRet = new ExecutionContextPromotionListener();
         toRet.setKeys(new String[]{"soluzioniViaggio"});
+        return toRet;
+    }
+    
+    @Bean
+    public StepExecutionListener oartenzePromotionListener() {
+        ExecutionContextPromotionListener toRet = new ExecutionContextPromotionListener();
+        toRet.setKeys(new String[]{"partenze"});
         return toRet;
     }
    
@@ -42,17 +49,23 @@ public class TreniTimeJobConfiguration {
     public Step fetchSoluzioniStep(
             StepBuilderFactory stepBuilderFactory, 
             FetchSoluzioniViaggioTasklet fetchSoluzioniViaggioTasklet,
-            StepExecutionListener promotionListener) {
+            StepExecutionListener soluzioniViaggioPromotionListener) {
         return stepBuilderFactory.get("fetchSoluzioniStep")
                 .tasklet(fetchSoluzioniViaggioTasklet)
-                .listener(promotionListener)
+                .listener(fetchSoluzioniViaggioTasklet)
+                .listener(soluzioniViaggioPromotionListener)
                 .build();
     }
 
     @Bean
-    public Step fetchPartenzeStep(StepBuilderFactory stepBuilderFactory, FetchPartenzeTasklet fetchPartenzeTasklet) {
+    public Step fetchPartenzeStep(
+            StepBuilderFactory stepBuilderFactory, 
+            FetchPartenzeTasklet fetchPartenzeTasklet,
+            StepExecutionListener partenzePromotionListener) {
         return stepBuilderFactory.get("fetchPartenzeStep")
                 .tasklet(fetchPartenzeTasklet)
+                .listener(fetchPartenzeTasklet)
+                .listener(partenzePromotionListener)
                 .build();
     }
 }

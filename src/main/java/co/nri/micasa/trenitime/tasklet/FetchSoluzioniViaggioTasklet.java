@@ -55,12 +55,8 @@ public class FetchSoluzioniViaggioTasklet implements Tasklet {
     @Override
     public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
         Map<String, Soluzione> soluzioni = getSoluzioni();
-        if(soluzioni != null) {
-            this.stepExecution.getExecutionContext().put("soluzioniViaggio", soluzioni);
-            return RepeatStatus.CONTINUABLE;
-        } else {
-            return RepeatStatus.FINISHED;
-        }
+        this.stepExecution.getExecutionContext().put("soluzioniViaggio", soluzioni);
+        return RepeatStatus.FINISHED;
     }
 
     private Map<String, Soluzione> getSoluzioni() {
