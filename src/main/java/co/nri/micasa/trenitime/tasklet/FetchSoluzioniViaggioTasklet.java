@@ -39,10 +39,7 @@ public class FetchSoluzioniViaggioTasklet implements Tasklet {
     @Value("${trenitime.endpoint.viaggiatreno.soluzioniViaggioNew}")
     private String soluzioniViaggioNewUrl;
 
-    @Value("${trenitime.fromStation}")
     private String fromStation;
-
-    @Value("${trenitime.toStation}")
     private String toStation;
     
     private StepExecution stepExecution;
@@ -50,6 +47,9 @@ public class FetchSoluzioniViaggioTasklet implements Tasklet {
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         this.stepExecution = stepExecution;
+        this.fromStation = this.stepExecution.getJobParameters().getString("fromStation");
+        this.toStation = this.stepExecution.getJobParameters().getString("toStation");
+
     }
 
     @Override

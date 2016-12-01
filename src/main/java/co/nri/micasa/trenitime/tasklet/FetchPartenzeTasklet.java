@@ -20,12 +20,16 @@ import org.springframework.web.client.RestTemplate;
 
 import co.nri.micasa.trenitime.model.in.viaggiatreno.partenze.PartenzaIn;
 import co.nri.micasa.trenitime.model.in.viaggiatreno.soluzioniViaggioNew.Soluzione;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalField;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.format.datetime.joda.LocalDateTimeParser;
 import org.springframework.http.HttpStatus;
 
 @Component
@@ -41,11 +45,7 @@ public class FetchPartenzeTasklet implements Tasklet {
     @Value("${trenitime.endpoint.viaggiatreno.partenze}")
     private String partenzeUrl;
 
-    @Value("${trenitime.fromStation}")
     private String fromStation;
-
-    @Value("${trenitime.toStation}")
-    private String toStation;
     
     private StepExecution stepExecution;
     private Map<String, Soluzione> soluzioniViaggio;
@@ -54,6 +54,7 @@ public class FetchPartenzeTasklet implements Tasklet {
     public void beforeStep(StepExecution stepExecution) {
         this.stepExecution = stepExecution;
         this.soluzioniViaggio = (Map<String, Soluzione>) this.stepExecution.getJobExecution().getExecutionContext().get("soluzioniViaggio");
+        this.fromStation = this.stepExecution.getJobParameters().getString("fromStation");
     }
 
     @Override
@@ -92,19 +93,21 @@ public class FetchPartenzeTasklet implements Tasklet {
                                 this.soluzioniViaggio.containsKey(Integer.toString(p.getNumeroTreno())))
                         )
                         .map((p) -> {
-                            p.setOrarioPartenza(p.getOrarioPartenza() + (p.getRitardo() * 1000));
+                            //Delay is in minutes, orariopartenza in milliseconds from 1970
+                            p.setOrarioPartenza(p.getOrarioPartenza() + (p.getRitardo() * 60000));
                             p.setCategoria(this.soluzioniViaggio.get(Integer.toString(p.getNumeroTreno())).getVehicles().get(0).getCategoriaDescrizione());
                             return p;
                         })
                         .filter((p) -> (
                                 p.getOrarioPartenza() > now.atZone(ZoneId.systemDefault()).toEpochSecond()*1000)
                         )
+                        .sorted((o1, o2) -> o1.getOrarioPartenza().compareTo(o2.getOrarioPartenza()))
                         .forEach((p) -> {
                             partenzeListOut.add(p);
+                            LocalDateTime partenza = LocalDateTime.ofInstant(Instant.ofEpochMilli(p.getOrarioPartenza()), ZoneId.systemDefault());
+                            LOG.info("Added train {} departure at {}", new Object[]{
+                                p.getNumeroTreno(), partenza.format(DateTimeFormatter.ISO_DATE_TIME)});
                         });
-
-                //sort
-                Collections.sort(partenzeListOut, (o1, o2) -> o1.getOrarioPartenza().compareTo(o2.getOrarioPartenza()));
             }
             return partenzeListOut;
         } catch(HttpClientErrorException e) {

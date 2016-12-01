@@ -2,7 +2,9 @@ package co.nri.micasa.trenitime.tasklet;
 
 import co.nri.micasa.MQTTPublishTasklet;
 import co.nri.micasa.trenitime.model.in.viaggiatreno.partenze.PartenzaIn;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
@@ -10,7 +12,6 @@ import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.core.scope.context.ChunkContext;
-import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -21,7 +22,7 @@ public class TrenitimePublishTasklet extends MQTTPublishTasklet {
     
     private static final String CLIENT_ID = "TreniTime";
     
-    @Value("${trenitime.topic.partenze}")
+    
     private String partenzeTopic;
 
     private StepExecution stepExecution;    
@@ -31,16 +32,17 @@ public class TrenitimePublishTasklet extends MQTTPublishTasklet {
     public void beforeStep(StepExecution stepExecution) {
         this.stepExecution = stepExecution;
         this.partenze = (List<PartenzaIn>) this.stepExecution.getJobExecution().getExecutionContext().get("partenze");
+        this.partenzeTopic = this.stepExecution.getJobParameters().getString("topic");
     }
     
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
         Integer timeNext = -1;
         if(!CollectionUtils.isEmpty(this.partenze)) {
-            LocalDateTime timeNextDT = LocalDateTime.ofEpochSecond(this.partenze.get(0).getOrarioPartenza(), 0, ZoneOffset.UTC);
+            LocalDateTime timeNextDT = LocalDateTime.ofInstant(Instant.ofEpochMilli(this.partenze.get(0).getOrarioPartenza()), ZoneId.systemDefault());
             timeNext = timeNextDT.getMinute();
         }
-        this.publish(StringUtils.join(this.partenzeTopic,"/time"), Integer.toString(timeNext));
+        this.publish(this.partenzeTopic, Integer.toString(timeNext));
         return RepeatStatus.FINISHED;
     }
 

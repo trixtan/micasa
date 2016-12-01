@@ -37,8 +37,6 @@ public abstract class MQTTPublishTasklet implements Tasklet {
             sampleClient.publish(topic, message);
             
             sampleClient.disconnect();
-            
-            System.exit(0);
         } catch (MqttException me) {
             LOG.error(me.getMessage(), me);
             me.printStackTrace();
