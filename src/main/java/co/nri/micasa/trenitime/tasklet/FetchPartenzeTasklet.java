@@ -22,14 +22,11 @@ import co.nri.micasa.trenitime.model.in.viaggiatreno.partenze.PartenzaIn;
 import co.nri.micasa.trenitime.model.in.viaggiatreno.soluzioniViaggioNew.Soluzione;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalField;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
-import org.springframework.format.datetime.joda.LocalDateTimeParser;
 import org.springframework.http.HttpStatus;
 
 @Component
@@ -37,10 +34,12 @@ public class FetchPartenzeTasklet implements Tasklet {
 
     private static final Logger LOG = LoggerFactory.getLogger(FetchPartenzeTasklet.class);
 
-    private static final SimpleDateFormat partenzeDateFormat = new SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT'Z", Locale.ENGLISH);
-
     private static final String CONFIG_PLACEHOLDER_PREFIX = "{";
     private static final String CONFIG_PLACEHOLDER_SUFFIX = "}";
+    
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("EEE MMM dd yyyy HH:mm:ss O", Locale.ENGLISH); 
+    //Trenitalia viaggiatreno works only with Europe Solar Time
+    private static final ZoneId zoneId = ZoneId.of("GMT+0100");
 
     @Value("${trenitime.endpoint.viaggiatreno.partenze}")
     private String partenzeUrl;
@@ -66,7 +65,8 @@ public class FetchPartenzeTasklet implements Tasklet {
 
     private List<PartenzaIn> getPartenze() throws UnsupportedEncodingException {
         Map<String, String> placeholders = new HashMap<>();
-        placeholders.put("date", partenzeDateFormat.format(Calendar.getInstance().getTime()));
+        String dateStr = ZonedDateTime.now(zoneId).format(DATE_FORMATTER);
+        placeholders.put("date", dateStr);
         placeholders.put("fromStation", this.fromStation);
 
         RestTemplate restTemplate = new RestTemplate();
@@ -99,12 +99,12 @@ public class FetchPartenzeTasklet implements Tasklet {
                             return p;
                         })
                         .filter((p) -> (
-                                p.getOrarioPartenza() > now.atZone(ZoneId.systemDefault()).toEpochSecond()*1000)
+                                p.getOrarioPartenza() > now.atZone(zoneId).toEpochSecond()*1000)
                         )
                         .sorted((o1, o2) -> o1.getOrarioPartenza().compareTo(o2.getOrarioPartenza()))
                         .forEach((p) -> {
                             partenzeListOut.add(p);
-                            LocalDateTime partenza = LocalDateTime.ofInstant(Instant.ofEpochMilli(p.getOrarioPartenza()), ZoneId.systemDefault());
+                            LocalDateTime partenza = LocalDateTime.ofInstant(Instant.ofEpochMilli(p.getOrarioPartenza()), zoneId);
                             LOG.info("Added train {} departure at {}", new Object[]{
                                 p.getNumeroTreno(), partenza.format(DateTimeFormatter.ISO_DATE_TIME)});
                         });

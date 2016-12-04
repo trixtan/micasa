@@ -2,7 +2,7 @@ package co.nri.micasa.trenitime;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-/*
+
 @SpringBootApplication
 public class TreniTimeBatchApplication {
 
@@ -11,4 +11,4 @@ public class TreniTimeBatchApplication {
                 TreniTimeBatchApplication.class, args)));
     }
 }
-*/
+
