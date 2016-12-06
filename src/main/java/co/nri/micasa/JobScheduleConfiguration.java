@@ -1,10 +1,13 @@
 package co.nri.micasa;
 
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameter;
 import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.JobParametersInvalidException;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
@@ -42,7 +45,7 @@ public class JobScheduleConfiguration  {
     
     @Autowired
     protected JobLauncher jobLauncher;
-    
+        
     @Bean
     public JobLauncher jobLauncher(JobRepository jobRepo){
         SimpleJobLauncher simpleJobLauncher = new SimpleJobLauncher();
@@ -50,26 +53,29 @@ public class JobScheduleConfiguration  {
         return simpleJobLauncher;
     }
     
-    @Scheduled(cron = "0 0 1 * * *")
+    @Scheduled(cron = "${etra.cron}")
     public void reportCurrentTime() throws JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException {
-        jobLauncher.run(etraJob, new JobParameters());
+        JobParametersBuilder paramBuilder = new JobParametersBuilder();
+        jobLauncher.run(etraJob, paramBuilder.toJobParameters());
     }
     
-    //Every five minutes
-    @Scheduled(fixedRate = 300000)
+    @Scheduled(cron = "${trenitime.cron}")
     public void getNextTrains() throws JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException {
-        Map<String, JobParameter> params1 = new HashMap<>();
-        params1.put("fromStation", new JobParameter(this.ttJob1FromStation));
-        params1.put("toStation", new JobParameter(this.ttJob1ToStation));
-        params1.put("topic", new JobParameter(this.ttJob1Topic));
+        JobParametersBuilder paramBuilder1 = new JobParametersBuilder();
+        paramBuilder1.addString("fromStation", this.ttJob1FromStation);
+        paramBuilder1.addString("toStation", this.ttJob1ToStation);
+        paramBuilder1.addString("topic", this.ttJob1Topic);
+        paramBuilder1.addDate("timestamp", new Date(), true);
         
-        Map<String, JobParameter> params2 = new HashMap<>();
-        params2.put("fromStation", new JobParameter(this.ttJob2FromStation));
-        params2.put("toStation", new JobParameter(this.ttJob2ToStation));
-        params2.put("topic", new JobParameter(this.ttJob2Topic));
+        JobParametersBuilder paramBuilder2 = new JobParametersBuilder();
+        paramBuilder2.addString("fromStation", this.ttJob2FromStation);
+        paramBuilder2.addString("toStation", this.ttJob2ToStation);
+        paramBuilder2.addString("topic", this.ttJob2Topic);
+        paramBuilder2.addDate("timestamp", new Date(), true);
         
-        jobLauncher.run(trenitimeJob, new JobParameters(params1));
-        jobLauncher.run(trenitimeJob, new JobParameters(params2));
+        
+        jobLauncher.run(trenitimeJob, paramBuilder1.toJobParameters());
+        jobLauncher.run(trenitimeJob, paramBuilder2.toJobParameters());
     }
 
 }
