@@ -1,12 +1,7 @@
 package co.nri.micasa;
 
-import java.time.LocalDateTime;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobParameter;
-import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.JobParametersInvalidException;
 import org.springframework.batch.core.launch.JobLauncher;
@@ -23,9 +18,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class JobScheduleConfiguration  {
-    
-    @Autowired
-    protected Job etraJob;
     
     @Value("${trenitime.1.fromStation}")
     protected String ttJob1FromStation;
@@ -48,6 +40,12 @@ public class JobScheduleConfiguration  {
     protected Job trenitimeJob;
     
     @Autowired
+    protected Job timeJob;
+    
+    @Autowired
+    protected Job etraJob;
+    
+    @Autowired
     protected JobLauncher jobLauncher;
         
     @Bean
@@ -57,9 +55,17 @@ public class JobScheduleConfiguration  {
         return simpleJobLauncher;
     }
     
-    @Scheduled(cron = "${etra.cron}")
+    @Scheduled(cron = "${time.cron}")
     public void reportCurrentTime() throws JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException {
         JobParametersBuilder paramBuilder = new JobParametersBuilder();
+        paramBuilder.addDate("timestamp", new Date(), true);
+        jobLauncher.run(timeJob, paramBuilder.toJobParameters());
+    }
+    
+    @Scheduled(cron = "${etra.cron}")
+    public void getEtraForTomorrow() throws JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException {
+        JobParametersBuilder paramBuilder = new JobParametersBuilder();
+        paramBuilder.addDate("timestamp", new Date(), true);
         jobLauncher.run(etraJob, paramBuilder.toJobParameters());
     }
     
