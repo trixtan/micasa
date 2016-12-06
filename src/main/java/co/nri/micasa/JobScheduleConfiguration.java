@@ -31,14 +31,18 @@ public class JobScheduleConfiguration  {
     protected String ttJob1FromStation;
     @Value("${trenitime.1.toStation}")
     protected String ttJob1ToStation;
-    @Value("${trenitime.1.topic}")
-    protected String ttJob1Topic;
+    @Value("${trenitime.1.departure.topic}")
+    protected String ttJob1DepartureTopic;
+    @Value("${trenitime.1.delay.topic}")
+    protected String ttJob1DelayTopic;
     @Value("${trenitime.2.fromStation}")
     protected String ttJob2FromStation;
     @Value("${trenitime.2.toStation}")
     protected String ttJob2ToStation;
-    @Value("${trenitime.2.topic}")
-    protected String ttJob2Topic;
+    @Value("${trenitime.2.departure.topic}")
+    protected String ttJob2DepartureTopic;
+    @Value("${trenitime.2.delay.topic}")
+    protected String ttJob2DelayTopic;    
     
     @Autowired
     protected Job trenitimeJob;
@@ -64,13 +68,15 @@ public class JobScheduleConfiguration  {
         JobParametersBuilder paramBuilder1 = new JobParametersBuilder();
         paramBuilder1.addString("fromStation", this.ttJob1FromStation);
         paramBuilder1.addString("toStation", this.ttJob1ToStation);
-        paramBuilder1.addString("topic", this.ttJob1Topic);
+        paramBuilder1.addString("departureTopic", this.ttJob1DepartureTopic);
+        paramBuilder1.addString("delayTopic", this.ttJob1DelayTopic);
         paramBuilder1.addDate("timestamp", new Date(), true);
         
         JobParametersBuilder paramBuilder2 = new JobParametersBuilder();
         paramBuilder2.addString("fromStation", this.ttJob2FromStation);
         paramBuilder2.addString("toStation", this.ttJob2ToStation);
-        paramBuilder2.addString("topic", this.ttJob2Topic);
+        paramBuilder2.addString("departureTopic", this.ttJob2DepartureTopic);
+        paramBuilder2.addString("delayTopic", this.ttJob2DelayTopic);
         paramBuilder2.addDate("timestamp", new Date(), true);
         
         

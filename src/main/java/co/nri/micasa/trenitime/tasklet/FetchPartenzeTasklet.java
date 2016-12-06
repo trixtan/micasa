@@ -92,12 +92,6 @@ public class FetchPartenzeTasklet implements Tasklet {
                         .filter((p) -> (
                                 this.soluzioniViaggio.containsKey(Integer.toString(p.getNumeroTreno())))
                         )
-                        .map((p) -> {
-                            //Delay is in minutes, orariopartenza in milliseconds from 1970
-                            p.setOrarioPartenza(p.getOrarioPartenza() + (p.getRitardo() * 60000));
-                            p.setCategoria(this.soluzioniViaggio.get(Integer.toString(p.getNumeroTreno())).getVehicles().get(0).getCategoriaDescrizione());
-                            return p;
-                        })
                         .filter((p) -> (
                                 p.getOrarioPartenza() > now.atZone(zoneId).toEpochSecond()*1000)
                         )
