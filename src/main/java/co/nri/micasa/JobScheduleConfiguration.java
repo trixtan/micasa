@@ -5,16 +5,12 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.JobParametersInvalidException;
 import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
-import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean;
-import org.springframework.batch.support.transaction.ResourcelessTransactionManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -49,6 +45,15 @@ public class JobScheduleConfiguration  {
     
     @Autowired
     protected JobLauncher jobLauncher;
+    
+    @Autowired
+    protected MapJobRepositoryFactoryBean mapJobRepositoryFactoryBean;
+    
+    //Every minute, remove data from mapJobRepository. Prevent heap space exception
+    @Scheduled(cron = "0 * * * * * *")
+    public void clearInMemoryJobRepository() {
+        mapJobRepositoryFactoryBean.clear();
+    }
     
     @Scheduled(cron = "${time.cron}")
     public void reportCurrentTime() throws JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException {

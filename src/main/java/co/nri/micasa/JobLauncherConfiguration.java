@@ -15,11 +15,16 @@ public class JobLauncherConfiguration  {
     public ResourcelessTransactionManager transactionManager() {
         return new ResourcelessTransactionManager();
     }
-
+    
     @Bean
-    public JobRepository jobRepository(ResourcelessTransactionManager transactionManager) throws Exception {
+    public MapJobRepositoryFactoryBean jobRepositoryFactoryBean(ResourcelessTransactionManager transactionManager) {
         MapJobRepositoryFactoryBean mapJobRepositoryFactoryBean = new MapJobRepositoryFactoryBean(transactionManager);
         mapJobRepositoryFactoryBean.setTransactionManager(transactionManager);
+        return mapJobRepositoryFactoryBean;
+    }
+
+    @Bean
+    public JobRepository jobRepository(MapJobRepositoryFactoryBean mapJobRepositoryFactoryBean) throws Exception {
         return mapJobRepositoryFactoryBean.getObject();
     }
         
