@@ -48,9 +48,9 @@ public class JobScheduleConfiguration  {
     
     @Autowired
     protected MapJobRepositoryFactoryBean mapJobRepositoryFactoryBean;
-    
+   
     //Every minute, remove data from mapJobRepository. Prevent heap space exception
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "0 * * * * * *")
     public void clearInMemoryJobRepository() {
         mapJobRepositoryFactoryBean.clear();
     }
