@@ -1,4 +1,4 @@
-package co.nri.micasa;
+package co.nri.micasa.common;
 
 import java.nio.ByteBuffer;
 import org.eclipse.paho.client.mqttv3.MqttClient;

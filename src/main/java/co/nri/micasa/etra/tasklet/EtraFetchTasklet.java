@@ -1,5 +1,7 @@
-package co.nri.micasa.etra;
+package co.nri.micasa.etra.tasklet;
 
+import co.nri.micasa.etra.EtraJobConfiguration;
+import co.nri.micasa.etra.model.TrashType;
 import com.ctc.wstx.api.WstxInputProperties;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -76,7 +78,7 @@ public class EtraFetchTasklet implements Tasklet {
                 int divsToSkip = 2;
                 String day = null, type = null;
                 boolean processFinished = false;
-                List<EtraBatchConfiguration.TRASH_TYPE> tomorrowTypes = new ArrayList<>();
+                List<TrashType> tomorrowTypes = new ArrayList<>();
 
                 while (reader.hasNext() && !processFinished) {
                     int event = reader.next();
@@ -123,7 +125,7 @@ public class EtraFetchTasklet implements Tasklet {
                                     if (currentTd == 3) {
                                         int tomorrow = LocalDate.now().plusDays(1).getDayOfMonth();
                                         if (extractDay(day) == tomorrow) {
-                                            tomorrowTypes.add(EtraBatchConfiguration.TRASH_TYPE.fromDescription(StringUtils.trimWhitespace(type)));
+                                            tomorrowTypes.add(TrashType.fromDescription(StringUtils.trimWhitespace(type)));
                                         }
                                     }
                                     currentTd = (currentTd++ % 3) + 1;

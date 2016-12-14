@@ -1,6 +1,6 @@
 package co.nri.micasa.trenitime.tasklet;
 
-import co.nri.micasa.MQTTPublishTasklet;
+import co.nri.micasa.common.MQTTPublishTasklet;
 import co.nri.micasa.trenitime.model.in.viaggiatreno.partenze.PartenzaIn;
 import java.time.Instant;
 import java.time.LocalDateTime;

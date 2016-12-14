@@ -1,6 +1,8 @@
-package co.nri.micasa.etra;
+package co.nri.micasa.etra.tasklet;
 
-import co.nri.micasa.MQTTPublishTasklet;
+import co.nri.micasa.common.MQTTPublishTasklet;
+import co.nri.micasa.etra.EtraJobConfiguration;
+import co.nri.micasa.etra.model.TrashType;
 import java.util.List;
 import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.scope.context.ChunkContext;
@@ -24,7 +26,7 @@ public class EtraPublishTasklet extends MQTTPublishTasklet {
                                     .getStepExecution()
                                     .getJobExecution()
                                     .getExecutionContext();
-        List<EtraBatchConfiguration.TRASH_TYPE> trashTypes = (List<EtraBatchConfiguration.TRASH_TYPE>) jobContext.get("tomorrowTypes");
+        List<TrashType> trashTypes = (List<TrashType>) jobContext.get("tomorrowTypes");
         String result = null;
         if(trashTypes != null && !trashTypes.isEmpty()) {
             result = StringUtils.collectionToDelimitedString(trashTypes, ",");
