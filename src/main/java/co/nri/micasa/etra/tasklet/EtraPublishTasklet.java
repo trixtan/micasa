@@ -1,7 +1,6 @@
 package co.nri.micasa.etra.tasklet;
 
 import co.nri.micasa.common.MQTTPublishTasklet;
-import co.nri.micasa.etra.EtraJobConfiguration;
 import co.nri.micasa.etra.model.TrashType;
 import java.util.List;
 import org.springframework.batch.core.StepContribution;

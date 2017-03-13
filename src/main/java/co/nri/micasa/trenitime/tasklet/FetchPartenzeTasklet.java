@@ -1,7 +1,6 @@
 package co.nri.micasa.trenitime.tasklet;
 
 import java.io.UnsupportedEncodingException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import org.apache.commons.lang3.text.StrSubstitutor;
 import org.slf4j.Logger;
@@ -45,6 +44,7 @@ public class FetchPartenzeTasklet implements Tasklet {
     private String partenzeUrl;
 
     private String fromStation;
+    private Long minutesToStation;
     
     private StepExecution stepExecution;
     private Map<String, Soluzione> soluzioniViaggio;
@@ -54,6 +54,7 @@ public class FetchPartenzeTasklet implements Tasklet {
         this.stepExecution = stepExecution;
         this.soluzioniViaggio = (Map<String, Soluzione>) this.stepExecution.getJobExecution().getExecutionContext().get("soluzioniViaggio");
         this.fromStation = this.stepExecution.getJobParameters().getString("fromStation");
+        this.minutesToStation = this.stepExecution.getJobParameters().getLong("minutesToStation");
     }
 
     @Override
@@ -65,7 +66,7 @@ public class FetchPartenzeTasklet implements Tasklet {
 
     private List<PartenzaIn> getPartenze() throws UnsupportedEncodingException {
         Map<String, String> placeholders = new HashMap<>();
-        String dateStr = ZonedDateTime.now(zoneId).format(DATE_FORMATTER);
+        String dateStr = ZonedDateTime.now(zoneId).plusMinutes(this.minutesToStation).format(DATE_FORMATTER);
         placeholders.put("date", dateStr);
         placeholders.put("fromStation", this.fromStation);
 
@@ -93,7 +94,7 @@ public class FetchPartenzeTasklet implements Tasklet {
                                 this.soluzioniViaggio.containsKey(Integer.toString(p.getNumeroTreno())))
                         )
                         .filter((p) -> (
-                                p.getOrarioPartenza() > now.atZone(zoneId).toEpochSecond()*1000)
+                                p.getOrarioPartenza() > now.atZone(zoneId).plusMinutes(this.minutesToStation).toEpochSecond()*1000)
                         )
                         .sorted((o1, o2) -> o1.getOrarioPartenza().compareTo(o2.getOrarioPartenza()))
                         .forEach((p) -> {

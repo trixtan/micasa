@@ -1,7 +1,5 @@
 package co.nri.micasa.trenitime.tasklet;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -24,7 +22,6 @@ import co.nri.micasa.trenitime.model.in.viaggiatreno.soluzioniViaggioNew.Soluzio
 import co.nri.micasa.trenitime.model.in.viaggiatreno.soluzioniViaggioNew.SoluzioniViaggioNewResponse;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
@@ -47,6 +44,7 @@ public class FetchSoluzioniViaggioTasklet implements Tasklet {
 
     private String fromStation;
     private String toStation;
+    private Long minutesToStation;
     
     private StepExecution stepExecution;
     
@@ -57,7 +55,7 @@ public class FetchSoluzioniViaggioTasklet implements Tasklet {
         this.stepExecution = stepExecution;
         this.fromStation = this.stepExecution.getJobParameters().getString("fromStation");
         this.toStation = this.stepExecution.getJobParameters().getString("toStation");
-
+        this.minutesToStation = this.stepExecution.getJobParameters().getLong("minutesToStation");
     }
 
     @Override
@@ -70,7 +68,7 @@ public class FetchSoluzioniViaggioTasklet implements Tasklet {
     private Map<String, Soluzione> getSoluzioni() {
         //Get all solutions from now
         Map<String, String> placeholders = new HashMap<>();
-        String dateStr = LocalDateTime.now(zoneId).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
+        String dateStr = LocalDateTime.now(zoneId).plusMinutes(this.minutesToStation).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
         String fromStation = stripStationId(this.fromStation);
         String toStation = stripStationId(this.toStation);
         LOG.info("Searching trains at {}, from station {} to station {}", new Object[]{dateStr, fromStation, toStation});

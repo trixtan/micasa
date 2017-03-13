@@ -17,6 +17,8 @@ public class TreniTimeApplicationRunner implements ApplicationRunner {
     protected String ttJob1FromStation;
     @Value("${trenitime.1.toStation}")
     protected String ttJob1ToStation;
+    @Value("${trenitime.1.minutesToStation}")
+    protected Long ttJob1MinutesToStation;
     @Value("${trenitime.1.departure.topic}")
     protected String ttJob1DepartureTopic;
     @Value("${trenitime.1.delay.topic}")
@@ -25,6 +27,8 @@ public class TreniTimeApplicationRunner implements ApplicationRunner {
     protected String ttJob2FromStation;
     @Value("${trenitime.2.toStation}")
     protected String ttJob2ToStation;
+    @Value("${trenitime.2.minutesToStation}")
+    protected Long ttJob2MinutesToStation;
     @Value("${trenitime.2.departure.topic}")
     protected String ttJob2DepartureTopic;
     @Value("${trenitime.2.delay.topic}")
@@ -43,6 +47,7 @@ public class TreniTimeApplicationRunner implements ApplicationRunner {
             paramBuilder1.addDate("timestamp", new Date(), true);
             paramBuilder1.addString("fromStation", ttJob1FromStation);
             paramBuilder1.addString("toStation", ttJob1ToStation);
+            paramBuilder1.addLong("minutesToStation", ttJob1MinutesToStation);
             paramBuilder1.addString("departureTopic", ttJob1DepartureTopic);
             paramBuilder1.addString("delayTopic", ttJob1DelayTopic);
             jobLauncher.run(trenitimeJob, paramBuilder1.toJobParameters());
@@ -51,6 +56,7 @@ public class TreniTimeApplicationRunner implements ApplicationRunner {
             paramBuilder2.addDate("timestamp", new Date(), true);
             paramBuilder2.addString("fromStation", ttJob2FromStation);
             paramBuilder2.addString("toStation", ttJob2ToStation);
+            paramBuilder1.addLong("minutesToStation", ttJob2MinutesToStation);
             paramBuilder2.addString("departureTopic", ttJob2DepartureTopic);
             paramBuilder2.addString("delayTopic", ttJob2DelayTopic);
             jobLauncher.run(trenitimeJob, paramBuilder2.toJobParameters());
