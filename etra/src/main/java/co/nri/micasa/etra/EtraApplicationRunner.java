@@ -20,11 +20,9 @@ public class EtraApplicationRunner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        if(args.containsOption("etra")) {
-            JobParametersBuilder paramBuilder = new JobParametersBuilder();
-            paramBuilder.addDate("timestamp", new Date(), true);
-            jobLauncher.run(etraJob, paramBuilder.toJobParameters());
-        }
+        JobParametersBuilder paramBuilder = new JobParametersBuilder();
+        paramBuilder.addDate("timestamp", new Date(), true);
+        jobLauncher.run(etraJob, paramBuilder.toJobParameters());
     }
 }
 

@@ -42,25 +42,23 @@ public class TreniTimeApplicationRunner implements ApplicationRunner {
     
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        if(args.containsOption("trenitime")) {
-            JobParametersBuilder paramBuilder1 = new JobParametersBuilder();
-            paramBuilder1.addDate("timestamp", new Date(), true);
-            paramBuilder1.addString("fromStation", ttJob1FromStation);
-            paramBuilder1.addString("toStation", ttJob1ToStation);
-            paramBuilder1.addLong("minutesToStation", ttJob1MinutesToStation);
-            paramBuilder1.addString("departureTopic", ttJob1DepartureTopic);
-            paramBuilder1.addString("delayTopic", ttJob1DelayTopic);
-            jobLauncher.run(trenitimeJob, paramBuilder1.toJobParameters());
-            
-            JobParametersBuilder paramBuilder2 = new JobParametersBuilder();
-            paramBuilder2.addDate("timestamp", new Date(), true);
-            paramBuilder2.addString("fromStation", ttJob2FromStation);
-            paramBuilder2.addString("toStation", ttJob2ToStation);
-            paramBuilder1.addLong("minutesToStation", ttJob2MinutesToStation);
-            paramBuilder2.addString("departureTopic", ttJob2DepartureTopic);
-            paramBuilder2.addString("delayTopic", ttJob2DelayTopic);
-            jobLauncher.run(trenitimeJob, paramBuilder2.toJobParameters());
-        }
+        JobParametersBuilder paramBuilder1 = new JobParametersBuilder();
+        paramBuilder1.addDate("timestamp", new Date(), true);
+        paramBuilder1.addString("fromStation", ttJob1FromStation);
+        paramBuilder1.addString("toStation", ttJob1ToStation);
+        paramBuilder1.addLong("minutesToStation", ttJob1MinutesToStation);
+        paramBuilder1.addString("departureTopic", ttJob1DepartureTopic);
+        paramBuilder1.addString("delayTopic", ttJob1DelayTopic);
+        jobLauncher.run(trenitimeJob, paramBuilder1.toJobParameters());
+
+        JobParametersBuilder paramBuilder2 = new JobParametersBuilder();
+        paramBuilder2.addDate("timestamp", new Date(), true);
+        paramBuilder2.addString("fromStation", ttJob2FromStation);
+        paramBuilder2.addString("toStation", ttJob2ToStation);
+        paramBuilder1.addLong("minutesToStation", ttJob2MinutesToStation);
+        paramBuilder2.addString("departureTopic", ttJob2DepartureTopic);
+        paramBuilder2.addString("delayTopic", ttJob2DelayTopic);
+        jobLauncher.run(trenitimeJob, paramBuilder2.toJobParameters());
     }
 }
 
