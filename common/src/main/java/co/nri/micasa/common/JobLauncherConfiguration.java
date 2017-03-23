@@ -26,7 +26,6 @@ public class JobLauncherConfiguration  {
     }
 
     @Bean
-
     public JobRepository jobRepository(MapJobRepositoryFactoryBean jobRepositoryFactoryBean) throws Exception {
         return jobRepositoryFactoryBean.getObject();
     }
