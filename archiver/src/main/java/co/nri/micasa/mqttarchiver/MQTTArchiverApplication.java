@@ -37,10 +37,13 @@ public class MQTTArchiverApplication {
     
     
     public static void main(String[] args) throws Exception {
-        ConfigurableApplicationContext ctx = new SpringApplication(MQTTArchiverApplication.class).run(args);
-        System.out.println("Hit Enter to terminate");
-        System.in.read();
-        ctx.close();
+        SpringApplication mqttArchiver = new SpringApplication(MQTTArchiverApplication.class);
+        mqttArchiver.setRegisterShutdownHook(false);
+        ConfigurableApplicationContext ctx = mqttArchiver.run(args);
+        
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            ctx.close();
+        }));
     }
     
     @Bean
