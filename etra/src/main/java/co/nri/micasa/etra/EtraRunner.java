@@ -11,13 +11,14 @@ import org.springframework.batch.core.repository.JobExecutionAlreadyRunningExcep
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.stereotype.Component;
 
-@Service
-public class TasksConfiguration{
+@Component
+public class EtraRunner implements ApplicationRunner {
     
-    private static final Logger LOG = LoggerFactory.getLogger(TasksConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EtraRunner.class);
     
     @Autowired
     protected Job etraJob;
@@ -25,8 +26,8 @@ public class TasksConfiguration{
     @Autowired
     protected JobLauncher jobLauncher;
 
-    @Scheduled(cron = "${etra.cron}")
-    public void run() {
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
         JobParametersBuilder paramBuilder = new JobParametersBuilder();
         paramBuilder.addDate("timestamp", new Date(), true);
         
@@ -36,5 +37,6 @@ public class TasksConfiguration{
             LOG.error(e.getMessage(), e);
         } 
     }
+
 }
 
