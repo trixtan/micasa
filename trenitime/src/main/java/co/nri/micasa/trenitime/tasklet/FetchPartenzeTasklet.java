@@ -94,12 +94,12 @@ public class FetchPartenzeTasklet implements Tasklet {
                                 this.soluzioniViaggio.containsKey(Integer.toString(p.getNumeroTreno())))
                         )
                         .filter((p) -> (
-                                p.getOrarioPartenza() > now.atZone(zoneId).plusMinutes(this.minutesToStation).toEpochSecond()*1000)
+                                p.getOrarioPartenza() > now.atZone(ZoneId.systemDefault()).plusMinutes(this.minutesToStation).toEpochSecond()*1000)
                         )
                         .sorted((o1, o2) -> o1.getOrarioPartenza().compareTo(o2.getOrarioPartenza()))
                         .forEach((p) -> {
                             partenzeListOut.add(p);
-                            LocalDateTime partenza = LocalDateTime.ofInstant(Instant.ofEpochMilli(p.getOrarioPartenza()), zoneId);
+                            LocalDateTime partenza = LocalDateTime.ofInstant(Instant.ofEpochMilli(p.getOrarioPartenza()), ZoneId.systemDefault());
                             LOG.info("Added train {} departure at {}", new Object[]{
                                 p.getNumeroTreno(), partenza.format(DateTimeFormatter.ISO_DATE_TIME)});
                         });
